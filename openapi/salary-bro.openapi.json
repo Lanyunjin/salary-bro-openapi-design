@@ -1,0 +1,1750 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Salary Bro API",
+    "description": "Contract-first API for exchange-rate alerts, leave-plan recommendations, deposit comparisons, and salary purchasing-power calculations. Financial data is served from the application's synchronized central data store rather than fetched from the Bank of Thailand during each user request. Dataset refresh schedules are configurable; responses expose data-as-of information so retained last-successful snapshots can be identified when a later synchronization fails.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Local application server"
+    },
+    {
+      "url": "http://127.0.0.1:4010/api/v1",
+      "description": "Prism mock server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Exchange Rates",
+      "description": "Latest THB exchange-rate data from the central data store"
+    },
+    {
+      "name": "Exchange Rate Alerts",
+      "description": "API-key-protected exchange-rate alert management"
+    },
+    {
+      "name": "Notifications",
+      "description": "API-key-protected simulated in-app notification inbox"
+    },
+    {
+      "name": "Holiday Plans",
+      "description": "Leave-day recommendations around weekends and financial-institution holidays"
+    },
+    {
+      "name": "Financial Comparisons",
+      "description": "Deposit return comparisons based on synchronized bank rates"
+    },
+    {
+      "name": "Salary Power",
+      "description": "Salary purchasing-power and mock market-benchmark calculations"
+    }
+  ],
+  "paths": {
+    "/exchange-rates/latest": {
+      "get": {
+        "tags": [
+          "Exchange Rates"
+        ],
+        "summary": "Get the latest exchange rates",
+        "description": "Returns the most recent available daily rates quoted as Thai baht per one unit of foreign currency. Results may be filtered by currency code.",
+        "operationId": "getLatestExchangeRates",
+        "security": [],
+        "parameters": [
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "ISO 4217 foreign currency code",
+            "schema": {
+              "$ref": "#/components/schemas/CurrencyCode"
+            },
+            "example": "USD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Latest exchange-rate snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRateSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "503": {
+            "$ref": "#/components/responses/DataUnavailable"
+          }
+        }
+      }
+    },
+    "/exchange-rate-alerts": {
+      "get": {
+        "tags": [
+          "Exchange Rate Alerts"
+        ],
+        "summary": "List the current user's alerts",
+        "operationId": "listExchangeRateAlerts",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filter alerts by lifecycle status",
+            "schema": {
+              "$ref": "#/components/schemas/AlertStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current user's exchange-rate alerts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRateAlertList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Exchange Rate Alerts"
+        ],
+        "summary": "Create an exchange-rate alert",
+        "description": "Creates an alert evaluated against the latest synchronized mid rate. Notification delivery is simulated through the notifications resource.",
+        "operationId": "createExchangeRateAlert",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Alert created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRateAlert"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/DataUnavailable"
+          }
+        }
+      }
+    },
+    "/exchange-rate-alerts/{alertId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/AlertId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Exchange Rate Alerts"
+        ],
+        "summary": "Get an exchange-rate alert",
+        "operationId": "getExchangeRateAlert",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alert details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRateAlert"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Exchange Rate Alerts"
+        ],
+        "summary": "Update or pause an exchange-rate alert",
+        "operationId": "updateExchangeRateAlert",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated alert",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRateAlert"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Exchange Rate Alerts"
+        ],
+        "summary": "Delete an exchange-rate alert",
+        "operationId": "deleteExchangeRateAlert",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Alert deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "List simulated notifications",
+        "operationId": "listNotifications",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/NotificationStatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Simulated notification inbox",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}": {
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark a simulated notification as read",
+        "operationId": "updateNotification",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NotificationId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated notification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/holiday-plans/recommendations": {
+      "post": {
+        "tags": [
+          "Holiday Plans"
+        ],
+        "summary": "Recommend efficient leave plans",
+        "description": "Ranks leave plans that combine requested leave days, weekends, and synchronized financial-institution holidays. Calendar export is outside this version.",
+        "operationId": "recommendHolidayPlans",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HolidayPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked leave-plan recommendations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayPlanResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "503": {
+            "$ref": "#/components/responses/DataUnavailable"
+          }
+        }
+      }
+    },
+    "/financial-comparisons": {
+      "post": {
+        "tags": [
+          "Financial Comparisons"
+        ],
+        "summary": "Compare deposit returns",
+        "description": "Calculates gross interest and maturity amounts from synchronized deposit rates. Tax is not included in this contract version.",
+        "operationId": "compareDepositReturns",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialComparisonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit offers ranked by maturity amount",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialComparisonResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "503": {
+            "$ref": "#/components/responses/DataUnavailable"
+          }
+        }
+      }
+    },
+    "/salary-power-calculations": {
+      "post": {
+        "tags": [
+          "Salary Power"
+        ],
+        "summary": "Calculate salary purchasing power",
+        "description": "Compares current salary purchasing power with a selected historical year and a simulated internal market benchmark.",
+        "operationId": "calculateSalaryPower",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalaryPowerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Salary purchasing-power calculation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalaryPowerResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "503": {
+            "$ref": "#/components/responses/DataUnavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Mock API-key contract only. No real credential is included; the header represents a registered user for design purposes only."
+      }
+    },
+    "parameters": {
+      "AlertId": {
+        "name": "alertId",
+        "in": "path",
+        "required": true,
+        "description": "Exchange-rate alert identifier",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "example": "fcb2ab5c-64c1-41d8-b3a8-dd099eba98be"
+      },
+      "NotificationId": {
+        "name": "notificationId",
+        "in": "path",
+        "required": true,
+        "description": "Notification identifier",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "example": "edb65d1c-50a2-4975-a849-895f1430db01"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Request validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": "VALIDATION_ERROR",
+              "message": "One or more request values are invalid.",
+              "details": [
+                {
+                  "field": "currencyCode",
+                  "issue": "must be a three-letter ISO 4217 code"
+                }
+              ],
+              "timestamp": "2026-08-07T13:30:00Z"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "A valid X-API-Key header is required",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": "UNAUTHORIZED",
+              "message": "A valid X-API-Key header is required.",
+              "timestamp": "2026-08-07T13:30:00Z"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested resource was not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "The requested resource was not found.",
+              "timestamp": "2026-08-07T13:30:00Z"
+            }
+          }
+        }
+      },
+      "DataUnavailable": {
+        "description": "Synchronized source data is not available",
+        "headers": {
+          "Retry-After": {
+            "description": "Suggested number of seconds before retrying",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "example": 3600
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": "DATA_UNAVAILABLE",
+              "message": "The required daily financial data is not available yet.",
+              "timestamp": "2026-08-07T13:30:00Z"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "CurrencyCode": {
+        "type": "string",
+        "description": "Three-letter ISO 4217 currency code",
+        "pattern": "^[A-Z]{3}$",
+        "example": "USD"
+      },
+      "DataSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider",
+          "dataset",
+          "isMock"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "example": "Bank of Thailand"
+          },
+          "dataset": {
+            "type": "string",
+            "example": "Average Exchange Rate - THB / Foreign Currency"
+          },
+          "syncFrequency": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "ON_DEMAND",
+              "STATIC"
+            ],
+            "example": "DAILY"
+          },
+          "isMock": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "issue"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "example": "amount"
+          },
+          "issue": {
+            "type": "string",
+            "example": "must be greater than or equal to 1000"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "timestamp"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_ERROR",
+              "UNAUTHORIZED",
+              "NOT_FOUND",
+              "DATA_UNAVAILABLE"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExchangeRate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currencyCode",
+          "currencyName",
+          "buyingTransfer",
+          "selling",
+          "midRate",
+          "unit"
+        ],
+        "properties": {
+          "currencyCode": {
+            "$ref": "#/components/schemas/CurrencyCode"
+          },
+          "currencyName": {
+            "type": "string",
+            "example": "US Dollar"
+          },
+          "buyingTransfer": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 35.42
+          },
+          "selling": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 35.78
+          },
+          "midRate": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 35.6
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "THB_PER_FOREIGN_CURRENCY"
+            ]
+          }
+        }
+      },
+      "ExchangeRateSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "baseCurrency",
+          "period",
+          "rates",
+          "dataAsOf",
+          "source"
+        ],
+        "properties": {
+          "baseCurrency": {
+            "type": "string",
+            "enum": [
+              "THB"
+            ]
+          },
+          "period": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-08-07"
+          },
+          "rates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ExchangeRate"
+            }
+          },
+          "dataAsOf": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-07T11:00:00Z"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DataSource"
+          }
+        },
+        "example": {
+          "baseCurrency": "THB",
+          "period": "2026-08-07",
+          "rates": [
+            {
+              "currencyCode": "USD",
+              "currencyName": "US Dollar",
+              "buyingTransfer": 35.42,
+              "selling": 35.78,
+              "midRate": 35.6,
+              "unit": "THB_PER_FOREIGN_CURRENCY"
+            }
+          ],
+          "dataAsOf": "2026-08-07T11:00:00Z",
+          "source": {
+            "provider": "Bank of Thailand",
+            "dataset": "Average Exchange Rate - THB / Foreign Currency",
+            "syncFrequency": "DAILY",
+            "isMock": false
+          }
+        }
+      },
+      "AlertCondition": {
+        "type": "string",
+        "description": "Comparison applied to the synchronized mid rate",
+        "enum": [
+          "ABOVE_OR_EQUAL",
+          "BELOW_OR_EQUAL"
+        ]
+      },
+      "AlertStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "PAUSED",
+          "TRIGGERED"
+        ]
+      },
+      "CreateAlertRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currencyCode",
+          "condition",
+          "targetRate"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "USD travel budget"
+          },
+          "currencyCode": {
+            "$ref": "#/components/schemas/CurrencyCode"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/AlertCondition"
+          },
+          "targetRate": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 35.5
+          }
+        },
+        "example": {
+          "name": "USD travel budget",
+          "currencyCode": "USD",
+          "condition": "BELOW_OR_EQUAL",
+          "targetRate": 35.5
+        }
+      },
+      "UpdateAlertRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "condition": {
+            "$ref": "#/components/schemas/AlertCondition"
+          },
+          "targetRate": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED"
+            ]
+          }
+        },
+        "example": {
+          "targetRate": 35.25,
+          "status": "ACTIVE"
+        }
+      },
+      "ExchangeRateAlert": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "currencyCode",
+          "condition",
+          "targetRate",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "$ref": "#/components/schemas/CurrencyCode"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/AlertCondition"
+          },
+          "targetRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentMidRate": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/AlertStatus"
+          },
+          "lastEvaluatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastTriggeredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "id": "fcb2ab5c-64c1-41d8-b3a8-dd099eba98be",
+          "name": "USD travel budget",
+          "currencyCode": "USD",
+          "condition": "BELOW_OR_EQUAL",
+          "targetRate": 35.5,
+          "currentMidRate": 35.42,
+          "status": "TRIGGERED",
+          "lastEvaluatedAt": "2026-08-07T11:05:00Z",
+          "lastTriggeredAt": "2026-08-07T11:05:00Z",
+          "createdAt": "2026-08-01T03:10:00Z",
+          "updatedAt": "2026-08-07T11:05:00Z"
+        }
+      },
+      "ExchangeRateAlertList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExchangeRateAlert"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          }
+        }
+      },
+      "NotificationStatus": {
+        "type": "string",
+        "enum": [
+          "UNREAD",
+          "READ"
+        ]
+      },
+      "Notification": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "title",
+          "message",
+          "status",
+          "relatedAlertId",
+          "currencyCode",
+          "currentRate",
+          "targetRate",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "EXCHANGE_RATE_ALERT"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/NotificationStatus"
+          },
+          "relatedAlertId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currencyCode": {
+            "$ref": "#/components/schemas/CurrencyCode"
+          },
+          "currentRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "targetRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "example": {
+          "id": "edb65d1c-50a2-4975-a849-895f1430db01",
+          "type": "EXCHANGE_RATE_ALERT",
+          "title": "USD target reached",
+          "message": "The USD mid rate is now 35.42 THB, at or below your target of 35.50 THB.",
+          "status": "UNREAD",
+          "relatedAlertId": "fcb2ab5c-64c1-41d8-b3a8-dd099eba98be",
+          "currencyCode": "USD",
+          "currentRate": 35.42,
+          "targetRate": 35.5,
+          "createdAt": "2026-08-07T11:05:00Z",
+          "readAt": null
+        }
+      },
+      "NotificationList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "total",
+          "unreadCount"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "unreadCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          }
+        }
+      },
+      "UpdateNotificationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "READ"
+            ]
+          }
+        },
+        "example": {
+          "status": "READ"
+        }
+      },
+      "HolidayPlanRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "year",
+          "month",
+          "desiredConsecutiveDays",
+          "maxLeaveDays"
+        ],
+        "properties": {
+          "year": {
+            "type": "integer",
+            "minimum": 2020,
+            "maximum": 2100,
+            "example": 2026
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "example": 12
+          },
+          "desiredConsecutiveDays": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 14,
+            "example": 5
+          },
+          "maxLeaveDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "example": 2
+          }
+        },
+        "example": {
+          "year": 2026,
+          "month": 12,
+          "desiredConsecutiveDays": 5,
+          "maxLeaveDays": 2
+        }
+      },
+      "Holiday": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "name"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "date": "2026-12-10",
+          "name": "Constitution Day"
+        }
+      },
+      "LeaveRecommendation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "startDate",
+          "endDate",
+          "totalConsecutiveDays",
+          "leaveDaysUsed",
+          "efficiencyScore",
+          "leaveDates",
+          "holidays",
+          "weekendDays",
+          "summary"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "totalConsecutiveDays": {
+            "type": "integer",
+            "minimum": 2
+          },
+          "leaveDaysUsed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "efficiencyScore": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "description": "Consecutive days off divided by leave days used; zero-leave plans use the total consecutive days."
+          },
+          "leaveDates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "holidays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Holiday"
+            }
+          },
+          "weekendDays": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "rank": 1,
+          "startDate": "2026-12-10",
+          "endDate": "2026-12-14",
+          "totalConsecutiveDays": 5,
+          "leaveDaysUsed": 2,
+          "efficiencyScore": 2.5,
+          "leaveDates": [
+            "2026-12-11",
+            "2026-12-14"
+          ],
+          "holidays": [
+            {
+              "date": "2026-12-10",
+              "name": "Constitution Day"
+            }
+          ],
+          "weekendDays": [
+            "2026-12-12",
+            "2026-12-13"
+          ],
+          "summary": "Use two leave days to create a five-day break."
+        }
+      },
+      "HolidayPlanResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "year",
+          "month",
+          "recommendations",
+          "dataAsOf",
+          "source"
+        ],
+        "properties": {
+          "year": {
+            "type": "integer"
+          },
+          "month": {
+            "type": "integer"
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaveRecommendation"
+            }
+          },
+          "dataAsOf": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DataSource"
+          }
+        },
+        "example": {
+          "year": 2026,
+          "month": 12,
+          "recommendations": [
+            {
+              "rank": 1,
+              "startDate": "2026-12-10",
+              "endDate": "2026-12-14",
+              "totalConsecutiveDays": 5,
+              "leaveDaysUsed": 2,
+              "efficiencyScore": 2.5,
+              "leaveDates": [
+                "2026-12-11",
+                "2026-12-14"
+              ],
+              "holidays": [
+                {
+                  "date": "2026-12-10",
+                  "name": "Constitution Day"
+                }
+              ],
+              "weekendDays": [
+                "2026-12-12",
+                "2026-12-13"
+              ],
+              "summary": "Use two leave days to create a five-day break."
+            }
+          ],
+          "dataAsOf": "2026-08-07T11:00:00Z",
+          "source": {
+            "provider": "Bank of Thailand",
+            "dataset": "Financial Institutions' Holidays",
+            "syncFrequency": "DAILY",
+            "isMock": false
+          }
+        }
+      },
+      "DepositType": {
+        "type": "string",
+        "enum": [
+          "SAVINGS",
+          "FIXED_DEPOSIT"
+        ]
+      },
+      "FinancialComparisonRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "amount",
+          "termMonths",
+          "depositType"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 1000,
+            "maximum": 1000000000,
+            "example": 100000
+          },
+          "termMonths": {
+            "type": "integer",
+            "enum": [
+              1,
+              3,
+              6,
+              12,
+              24,
+              36
+            ],
+            "example": 12
+          },
+          "depositType": {
+            "$ref": "#/components/schemas/DepositType"
+          }
+        },
+        "example": {
+          "amount": 100000,
+          "termMonths": 12,
+          "depositType": "FIXED_DEPOSIT"
+        }
+      },
+      "DepositOffer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "bankCode",
+          "bankName",
+          "productName",
+          "annualInterestRate",
+          "grossInterest",
+          "maturityAmount",
+          "calculationBasis"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "bankCode": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_-]{2,20}$"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "annualInterestRate": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "description": "Percent per annum"
+          },
+          "grossInterest": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "maturityAmount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "calculationBasis": {
+            "type": "string",
+            "enum": [
+              "SIMPLE_INTEREST"
+            ]
+          }
+        },
+        "example": {
+          "rank": 1,
+          "bankCode": "BANK_A",
+          "bankName": "Example Bank A",
+          "productName": "12-Month Fixed Deposit",
+          "annualInterestRate": 2.25,
+          "grossInterest": 2250,
+          "maturityAmount": 102250,
+          "calculationBasis": "SIMPLE_INTEREST"
+        }
+      },
+      "FinancialComparisonResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "amount",
+          "currency",
+          "termMonths",
+          "depositType",
+          "offers",
+          "dataAsOf",
+          "source"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "THB"
+            ]
+          },
+          "termMonths": {
+            "type": "integer"
+          },
+          "depositType": {
+            "$ref": "#/components/schemas/DepositType"
+          },
+          "offers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/DepositOffer"
+            }
+          },
+          "dataAsOf": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DataSource"
+          }
+        },
+        "example": {
+          "amount": 100000,
+          "currency": "THB",
+          "termMonths": 12,
+          "depositType": "FIXED_DEPOSIT",
+          "offers": [
+            {
+              "rank": 1,
+              "bankCode": "BANK_A",
+              "bankName": "Example Bank A",
+              "productName": "12-Month Fixed Deposit",
+              "annualInterestRate": 2.25,
+              "grossInterest": 2250,
+              "maturityAmount": 102250,
+              "calculationBasis": "SIMPLE_INTEREST"
+            }
+          ],
+          "dataAsOf": "2026-08-07T11:00:00Z",
+          "source": {
+            "provider": "Bank of Thailand",
+            "dataset": "Deposit Interest Rates for Individuals of Commercial Banks",
+            "syncFrequency": "DAILY",
+            "isMock": false
+          }
+        }
+      },
+      "SalaryPowerRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "monthlySalary",
+          "jobField",
+          "yearsExperience",
+          "comparisonYear"
+        ],
+        "properties": {
+          "monthlySalary": {
+            "type": "number",
+            "format": "double",
+            "minimum": 1,
+            "maximum": 10000000,
+            "example": 45000
+          },
+          "jobField": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "example": "Software Engineering"
+          },
+          "yearsExperience": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "maximum": 50,
+            "example": 3
+          },
+          "comparisonYear": {
+            "type": "integer",
+            "minimum": 1990,
+            "maximum": 2026,
+            "example": 2020
+          }
+        },
+        "example": {
+          "monthlySalary": 45000,
+          "jobField": "Software Engineering",
+          "yearsExperience": 3,
+          "comparisonYear": 2020
+        }
+      },
+      "MarketBenchmark": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobField",
+          "experienceBand",
+          "currency",
+          "monthlySalaryMin",
+          "monthlySalaryMedian",
+          "monthlySalaryMax",
+          "source"
+        ],
+        "properties": {
+          "jobField": {
+            "type": "string"
+          },
+          "experienceBand": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "THB"
+            ]
+          },
+          "monthlySalaryMin": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "monthlySalaryMedian": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "monthlySalaryMax": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "source": {
+            "$ref": "#/components/schemas/DataSource"
+          }
+        },
+        "example": {
+          "jobField": "Software Engineering",
+          "experienceBand": "3-5 years",
+          "currency": "THB",
+          "monthlySalaryMin": 42000,
+          "monthlySalaryMedian": 55000,
+          "monthlySalaryMax": 70000,
+          "source": {
+            "provider": "Salary Bro",
+            "dataset": "Seeded Salary Market Benchmark",
+            "syncFrequency": "STATIC",
+            "isMock": true
+          }
+        }
+      },
+      "SalaryPowerResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "calculationId",
+          "monthlySalary",
+          "currency",
+          "currentYear",
+          "comparisonYear",
+          "cpiCurrent",
+          "cpiComparison",
+          "realSalaryAtComparisonYear",
+          "purchasingPowerChangePercent",
+          "marketBenchmark",
+          "marketPositionPercent",
+          "riskLevel",
+          "recommendations",
+          "dataAsOf",
+          "sources"
+        ],
+        "properties": {
+          "calculationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monthlySalary": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "THB"
+            ]
+          },
+          "currentYear": {
+            "type": "integer"
+          },
+          "comparisonYear": {
+            "type": "integer"
+          },
+          "cpiCurrent": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "cpiComparison": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "realSalaryAtComparisonYear": {
+            "type": "number",
+            "format": "double",
+            "description": "Current salary converted to the purchasing power of the comparison year"
+          },
+          "purchasingPowerChangePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "marketBenchmark": {
+            "$ref": "#/components/schemas/MarketBenchmark"
+          },
+          "marketPositionPercent": {
+            "type": "number",
+            "format": "double",
+            "description": "Percentage difference between current salary and the mock market median"
+          },
+          "riskLevel": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MODERATE",
+              "HIGH"
+            ]
+          },
+          "recommendations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataAsOf": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "$ref": "#/components/schemas/DataSource"
+            }
+          }
+        },
+        "example": {
+          "calculationId": "4a127674-6d41-45e0-99f4-c87f7914f182",
+          "monthlySalary": 45000,
+          "currency": "THB",
+          "currentYear": 2026,
+          "comparisonYear": 2020,
+          "cpiCurrent": 111.4,
+          "cpiComparison": 98.7,
+          "realSalaryAtComparisonYear": 39874.33,
+          "purchasingPowerChangePercent": -11.39,
+          "marketBenchmark": {
+            "jobField": "Software Engineering",
+            "experienceBand": "3-5 years",
+            "currency": "THB",
+            "monthlySalaryMin": 42000,
+            "monthlySalaryMedian": 55000,
+            "monthlySalaryMax": 70000,
+            "source": {
+              "provider": "Salary Bro",
+              "dataset": "Seeded Salary Market Benchmark",
+              "syncFrequency": "STATIC",
+              "isMock": true
+            }
+          },
+          "marketPositionPercent": -18.18,
+          "riskLevel": "MODERATE",
+          "recommendations": [
+            "Use the market median and purchasing-power gap as evidence in salary discussions.",
+            "Consider negotiating benefits if base salary adjustment is limited."
+          ],
+          "dataAsOf": "2026-08-07T11:00:00Z",
+          "sources": [
+            {
+              "provider": "Bank of Thailand",
+              "dataset": "CPI and Inflation Statistics",
+              "syncFrequency": "DAILY",
+              "isMock": false
+            },
+            {
+              "provider": "Salary Bro",
+              "dataset": "Seeded Salary Market Benchmark",
+              "syncFrequency": "STATIC",
+              "isMock": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}
